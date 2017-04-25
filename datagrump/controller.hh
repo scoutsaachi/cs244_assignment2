@@ -12,8 +12,18 @@ private:
 
   /* Add member variables here */
   unsigned int cwnd;
-  unsigned int successful_acks_received;
-  uint64_t last_delay_triggered;
+  int counter;
+  long long prev_rtt;
+  long long min_rtt;
+  double rtt_diff;
+  int updateParameter;
+
+  const long long rtt_high = 150;
+  const long long rtt_low = 50;
+  const double alpha = 0.2;
+  const double beta = 0.8;
+
+  void updateAcks(int n);
   
 public:
   /* Public interface for the congestion controller */
