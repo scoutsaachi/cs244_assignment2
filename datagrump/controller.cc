@@ -5,10 +5,12 @@
 
 using namespace std;
 
+#define DELAY_TRIGGER_THRESH 100
+
 /* Default constructor */
 Controller::Controller( const bool debug )
-  : debug_( debug ), cwnd(10), last_ack_received(100000),
-  successful_acks_received(0)
+  : debug_( debug ), cwnd(10), successful_acks_received(0),
+  last_delay_triggered(0)
 {
   debug_ = true;
 }
@@ -49,9 +51,10 @@ void Controller::ack_received( const uint64_t sequence_number_acked,
                                /* when the ack was received (by sender) */
 {
   /* Default: take no action */
-  if (last_ack_received < timestamp_ack_received
-    && timestamp_ack_received - last_ack_received > timeout_ms()) {
+  if (timestamp_ack_received - send_timestamp_acked > DELAY_TRIGGER_THRESH
+    && timestamp_ack_received - last_delay_triggered > 2 * DELAY_TRIGGER_THRESH) {
     if (cwnd > 1) cwnd /= 2;
+    last_delay_triggered = timestamp_ack_received;
     successful_acks_received = 0;
   } else {
     successful_acks_received++;
@@ -61,7 +64,6 @@ void Controller::ack_received( const uint64_t sequence_number_acked,
     }
   }
 
-  last_ack_received = timestamp_ack_received;
   if ( debug_ ) {
     cerr << "At time " << timestamp_ack_received
 	 << " received ack for datagram " << sequence_number_acked
