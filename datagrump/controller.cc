@@ -11,8 +11,7 @@ using namespace std;
 /* Default constructor */
 Controller::Controller( const bool debug )
   : debug_( debug ), last_drop_time(0), wmax(20.0),
-  beta(0.5), C(3.5), last_window(0)
-
+  beta(0.65), C(4), last_window(0), alpha(1)
 {
   last_window = (1 - beta) * wmax;
   debug_ = true;
@@ -25,21 +24,28 @@ double Controller::window_size_ntrunc( void )
   uint64_t t = timestamp_ms() - last_drop_time;
   double t_d = (t / 1000.0);
   double wcubic = (C * pow(t_d - K, 3.0)) + wmax;
-  cerr << "K = " << K << ", t = " << t << ", t_d = " << t_d << ", last_window = " << last_window << ", wcubic = " << wcubic << endl;
+  if (debug_) {
+	cerr << "K = " << K << ", t = " << t << ", t_d = " << t_d << ", last_window = " << last_window << ", wcubic = " << wcubic << endl;
+  }
   if (wcubic < 1.0) {
     wcubic = 1.0;
   }
 
-  double smin = 1.0 / (5.0 * last_window);
+  double smin = 1.0 / (alpha * last_window);
   double window_diff = wcubic - last_window;
   if (window_diff < 0) {
-    last_window = wcubic;
+    cerr << "resetting" << endl;
+    //last_window = wcubic;
     window_diff = 0.0;
   }
 
   if (window_diff < smin) {
-    cerr << "smaller than smin" << endl;
+    if (debug_) {
+       cerr << "smaller than smin" << endl;
+    }
     wcubic = last_window + smin;
+  }else {
+    cerr << "driven cubic" << endl;
   }
 
   return wcubic;
@@ -86,7 +92,9 @@ void Controller::ack_received( const uint64_t sequence_number_acked,
   uint64_t t = timestamp_ack_received - last_drop_time;
   if (t > 2 * DELAY_TRIGGER_THRESH
     && rtt > DELAY_TRIGGER_THRESH) {
-    cerr << "cut" << endl;
+    if (debug_) {
+    	cerr << "cut" << endl;
+    }
     wmax = window_size_ntrunc();
     last_drop_time = timestamp_ack_received;
     last_window = (1 - beta) * wmax;

@@ -16,7 +16,7 @@ private:
   double beta;
   double C;
   double last_window;
-
+  double alpha;
   double window_size_ntrunc( void );
   
 public:
