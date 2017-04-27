@@ -14,7 +14,7 @@ Controller::Controller( const bool debug )
   beta(0.65), C(4), last_window(0), alpha(1)
 {
   last_window = (1 - beta) * wmax;
-  debug_ = true;
+  debug_ = false;
 }
 
 double Controller::window_size_ntrunc( void )
@@ -34,8 +34,6 @@ double Controller::window_size_ntrunc( void )
   double smin = 1.0 / (alpha * last_window);
   double window_diff = wcubic - last_window;
   if (window_diff < 0) {
-    cerr << "resetting" << endl;
-    //last_window = wcubic;
     window_diff = 0.0;
   }
 
@@ -44,10 +42,7 @@ double Controller::window_size_ntrunc( void )
        cerr << "smaller than smin" << endl;
     }
     wcubic = last_window + smin;
-  }else {
-    cerr << "driven cubic" << endl;
   }
-
   return wcubic;
 }
 
