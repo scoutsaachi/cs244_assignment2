@@ -11,13 +11,9 @@ private:
   bool debug_; /* Enables debugging output */
 
   /* Add member variables here */
-  uint64_t last_drop_time;
-  double wmax;
-  double beta;
-  double C;
-  double last_window;
-
-  double window_size_ntrunc( void );
+  unsigned int cwnd;
+  uint64_t last_ack_received;
+  unsigned int successful_acks_received;
   
 public:
   /* Public interface for the congestion controller */
@@ -43,7 +39,6 @@ public:
   /* How long to wait (in milliseconds) if there are no acks
      before sending one more datagram */
   unsigned int timeout_ms( void );
-
 };
 
 #endif

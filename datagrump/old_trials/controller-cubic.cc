@@ -10,7 +10,7 @@ using namespace std;
 
 /* Default constructor */
 Controller::Controller( const bool debug )
-  : debug_( debug ), last_drop_time(0), wmax(20.0),
+  : debug_( debug ), last_drop_time(0), wmax(20),
   beta(0.5), C(3.5), last_window(0)
 
 {
@@ -18,19 +18,20 @@ Controller::Controller( const bool debug )
   debug_ = true;
 }
 
-double Controller::window_size_ntrunc( void )
+/* Get current window size, in datagrams */
+unsigned int Controller::window_size( void )
 {
   double K = beta * wmax / C;
   K = cbrt(K);
   uint64_t t = timestamp_ms() - last_drop_time;
   double t_d = (t / 1000.0);
-  double wcubic = (C * pow(t_d - K, 3.0)) + wmax;
+  double wcubic = (C * pow(t_d - K, 3.0)) + (double)wmax;
   cerr << "K = " << K << ", t = " << t << ", t_d = " << t_d << ", last_window = " << last_window << ", wcubic = " << wcubic << endl;
   if (wcubic < 1.0) {
     wcubic = 1.0;
   }
 
-  double smin = 1.0 / (5.0 * last_window);
+  double smin = 1 / last_window;
   double window_diff = wcubic - last_window;
   if (window_diff < 0) {
     last_window = wcubic;
@@ -42,20 +43,12 @@ double Controller::window_size_ntrunc( void )
     wcubic = last_window + smin;
   }
 
-  return wcubic;
-}
-
-/* Get current window size, in datagrams */
-unsigned int Controller::window_size( void )
-{
-  unsigned int cwnd = (unsigned int) window_size_ntrunc();
-
   if ( debug_ ) {
     cerr << "At time " << timestamp_ms()
-   << " window size is " << cwnd << endl;
+   << " window size is " << (unsigned int) wcubic << endl;
   }
 
-  return cwnd;
+  return (unsigned int)wcubic;
 }
 
 /* A datagram was sent */
@@ -87,11 +80,11 @@ void Controller::ack_received( const uint64_t sequence_number_acked,
   if (t > 2 * DELAY_TRIGGER_THRESH
     && rtt > DELAY_TRIGGER_THRESH) {
     cerr << "cut" << endl;
-    wmax = window_size_ntrunc();
+    wmax = window_size();
     last_drop_time = timestamp_ack_received;
     last_window = (1 - beta) * wmax;
   } else {
-    last_window = window_size_ntrunc();
+    last_window = window_size();
   }
 
   if ( debug_ ) {
@@ -101,6 +94,10 @@ void Controller::ack_received( const uint64_t sequence_number_acked,
    << ", received @ time " << recv_timestamp_acked << " by receiver's clock)"
    << endl;
   }
+}
+
+void Controller::timeout_occured( void ) {
+  // cwnd = 1;
 }
 
 /* How long to wait (in milliseconds) if there are no acks

@@ -12,12 +12,10 @@ private:
 
   /* Add member variables here */
   uint64_t last_drop_time;
-  double wmax;
+  unsigned int wmax;
   double beta;
   double C;
   double last_window;
-
-  double window_size_ntrunc( void );
   
 public:
   /* Public interface for the congestion controller */
@@ -44,6 +42,7 @@ public:
      before sending one more datagram */
   unsigned int timeout_ms( void );
 
+  void timeout_occured ( void );
 };
 
 #endif
